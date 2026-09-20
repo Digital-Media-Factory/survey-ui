@@ -1,102 +1,132 @@
-# لوحة نتائج استبيان "أمان الأطفال في العالم الرقمي"
+# Child Safety in the Digital World — Survey Results Dashboard
 
-FastAPI backend + vanilla HTML/CSS/JS dashboard that reads a Google Forms export
-(`.xlsx`, `.xls`, `.csv`) from **disk, an upload, or a Google Sheets/Drive link**
-and renders the same kind of statistics and charts the Forms summary page shows —
-but filterable, animated, in RTL Arabic, and exportable.
+FastAPI backend and modern vanilla HTML/CSS/JS dashboard that reads a Google Forms export (`.xlsx`, `.xls`, `.csv`) from disk, file upload, or a Google Sheets/Drive link, and renders interactive statistics and visualizations with full RTL Arabic support, dynamic filtering, animations, and CSV export capabilities.
 
-The interface: a sticky header, a hero with the total response count counting up
-and a real participant quote, KPI cards with animated progress rings, filter
-chips, and four tabs — overview (top answer per question + demographics), all
-questions, the written answers, and the raw response table. Charts animate in as
-they scroll into view; everything respects `prefers-reduced-motion`.
+The dashboard includes a sticky navigation header, response counters, real participant quotes, KPI cards with circular progress indicators, dynamic filter chips, and four primary tabs:
+- Overview (top answer per question and demographic breakdowns)
+- Questions (distribution per question)
+- Written Voices (qualitative open-ended responses)
+- Raw Responses (searchable and paginated data table)
 
-Built against the real sheet: 14 responses × 27 questions.
+---
 
-## Run it
+## Authentication and Security
+
+The application is protected by a secure authentication layer:
+- **Credential Storage**: Credentials can be configured in `.env` (`AUTH_USERNAME`, `AUTH_EMAIL`, `AUTH_PASSWORD`) or synced dynamically from an external Google Sheet user database (`AUTH_SHEET_URL`).
+- **Password Hashing**: Verifies passwords using `bcrypt`.
+- **Account Verification**: Automatically checks account status (`Active`).
+- **Session Management**: Issues signed HMAC-SHA256 session cookies (`HttpOnly`, `SameSite=Lax`).
+- **Route Protection**: All API endpoints and dashboard pages require authentication, redirecting unauthenticated requests to `/login`.
+
+---
+
+## Run with Docker Compose
 
 ```bash
-python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+# Start the container in detached mode
+docker compose up -d
+
+# View real-time logs
+docker compose logs -f
+
+# Stop the container
+docker compose down
 ```
 
-Open http://127.0.0.1:8000 — the sheet in `data/` loads automatically on startup.
-API docs at `/docs`.
+Open http://localhost:8000. All variables from `.env` and files in `data/` are automatically mounted.
 
-To use a different sheet: drop it into `data/`, or upload it from the header, or
-paste a Google link (the file must be shared as *Anyone with the link*).
+---
 
-## Project layout
+## Run Locally (without Docker)
+
+```bash
+# Set up virtual environment
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run development server
+uvicorn app.main:app --reload --port 8000
+```
+
+Open http://127.0.0.1:8000 — the dataset in `data/` loads automatically on startup.
+API documentation is available at `/docs`.
+
+To use a different dataset: place the file into `data/`, or configure the `DRIVE_LINK` variable in `.env` (the Google Sheets file must be shared as "Anyone with the link").
+
+---
+
+## Project Structure
 
 ```
 app/
-  main.py        FastAPI routes + in-memory store
-  loaders.py     disk / upload / Drive-link readers, share-link → export URL
-  analytics.py   question typing, Arabic cleaning, distributions, KPIs
-  static/        index.html · styles.css · app.js  (no build step, no framework)
-data/survey.xlsx the Google Forms export
+  main.py        FastAPI application, routes, authentication middleware, and session management
+  loaders.py     File loaders for local disk, multipart uploads, and Google Sheets/Drive export URLs
+  analytics.py   Question classification, Arabic text normalization, country merging, distributions, and KPIs
+  static/        Frontend dashboard assets (index.html, login.html, styles.css, app.js)
+data/
+  survey.xlsx    Default survey dataset
+Dockerfile       Container definition based on python:3.11-slim
+docker-compose.yml Container orchestration configuration
+.env.example     Template for environment configuration
+requirements.txt Python package dependencies
 ```
 
-## How the numbers are produced
+---
 
-Nothing is hard-coded to these 27 questions — each column is classified at load
-time, so a new form export still works:
+## Data Processing Pipeline
 
-| Type | Detected by | Rendered as |
+Column classifications are determined dynamically at load time:
+
+| Type | Detection Criteria | Visualization |
 |---|---|---|
-| `single` | few repeated values | doughnut (≤5 options) or horizontal bar |
-| `multi` | header says "يمكنك الاختيار حتى 3" or ≥30% of answers contain a comma | bar of split-and-counted options |
-| `open` | answers mostly unique and sentence-length | keyword chips + answer cards |
-| `timestamp` | datetime dtype | used for ordering only |
+| `single` | Limited repeated categorical values | Doughnut chart (<= 5 options) or horizontal bar |
+| `multi` | Header contains selection limits or >= 30% of answers contain delimiters | Horizontal bar chart of split and counted options |
+| `open` | High percentage of unique, sentence-length text | Keyword badges and response cards |
+| `timestamp` | Datetime dtype | Chronological sorting and date range metadata |
 
-Two cleaning steps matter for this sheet:
+### Normalization and Cleaning
+- **Country Standardization**: Varied spellings in Arabic, English, and French (such as "Morocco,Casablanca", "Le Maroc", "Maroc") are normalized to a single consistent country label via `COUNTRY_ALIASES` in `analytics.py`.
+- **Text Normalization**: Strips diacritics, tatweel, and hamza variations so variant spellings are grouped accurately under a unified canonical label.
 
-- **Country merge.** `Yemen`, `اليمن `, `القاهره` arrive as 7 distinct strings for
-  3 countries. `COUNTRY_ALIASES` in `analytics.py` folds them — extend that dict
-  as new countries come in.
-- **Arabic normalisation, two layers.** `normalize_text` folds diacritics, tatweel
-  and hamza forms so `أحياناً` and `احيانا` land in one bar. It is a *grouping key
-  only* — the label shown is the most common original spelling, via `tidy`, so the
-  screen never displays misspelled Arabic. Filter values are matched the same
-  loose way, so a chip still works if the sheet spells it differently.
+---
 
-Single-choice questions with 2–10 options automatically become the filter chips
-at the top, and every chart, open answer, KPI and table row respects them.
+## API Endpoints
 
-## API
-
-| Method | Path | Notes |
+| Method | Path | Description |
 |---|---|---|
-| GET | `/api/health` | is a sheet loaded, and which |
-| GET | `/api/meta` | row count, inferred schema, filter options |
-| GET | `/api/kpis` | headline percentages |
-| GET | `/api/highlights` | most common answer per closed question, strongest first |
-| GET | `/api/stats` | every question with its distribution or open answers |
-| GET | `/api/question/{id}` | one question block |
-| GET | `/api/responses` | paginated raw rows, `search=` does full-row match |
-| POST | `/api/source/upload` | multipart file |
-| POST | `/api/source/drive` | `{"link": "https://docs.google.com/..."}` |
-| GET | `/api/export/summary.csv` | flattened question/answer/count/percent |
+| POST | `/api/login` | Authenticate user and issue session cookie |
+| POST | `/api/logout` | Clear user session cookie |
+| GET | `/api/auth/me` | Current authenticated user profile |
+| GET | `/api/health` | Service status and current dataset info |
+| GET | `/api/meta` | Total responses, inferred schema, and filter options |
+| GET | `/api/kpis` | Summary key performance indicators |
+| GET | `/api/highlights` | Dominant answer per closed question |
+| GET | `/api/stats` | Question distributions and open-ended responses |
+| GET | `/api/question/{id}` | Single question analytical breakdown |
+| GET | `/api/responses` | Paginated raw response rows with full-text search |
+| POST | `/api/source/upload` | Upload new survey export file |
+| POST | `/api/source/drive` | Update data source using Google Sheets link |
+| GET | `/api/export/summary.csv` | Export summarized question-answer distributions as CSV |
 
-All GET endpoints take `filters` as a URL-encoded JSON object:
+All GET statistics endpoints support query filtering via the `filters` URL parameter:
 
 ```
-/api/stats?filters={"النوع":["أنثى"],"كم عمرك؟":["17 الى 18 عاما"]}
+/api/stats?filters={"Gender":["Female"],"Age":["17 to 18 years"]}
 ```
 
-Filter values are compared against **cleaned** text, which is what `/api/meta`
-returns — pass those strings straight through and they will match.
+---
 
-## Notes before you ship this
+## Configuration Reference (.env)
 
-- State lives in a module-level dict, so an upload replaces the sheet for every
-  visitor and is lost on restart. For more than one user, persist to SQLite or
-  a `sessionStorage`-keyed store.
-- There is no auth. These are children's free-text answers; put it behind a login
-  before it touches a public host, and keep the timestamp column out of any
-  public build.
-- Private Drive files need OAuth — the loader deliberately only handles
-  link-shared files and tells you when it got an HTML login page instead.
-
-
+| Variable | Description | Default |
+|---|---|---|
+| `AUTH_USERNAME` | Super admin fallback username | `admin` |
+| `AUTH_EMAIL` | Super admin fallback email | `admin@example.com` |
+| `AUTH_PASSWORD` | Super admin fallback password | `password123` |
+| `SESSION_SECRET_KEY` | Secret key for signing HMAC session cookies | Recommended to generate a secure random string |
+| `DRIVE_LINK` | Public Google Sheets/Drive survey data URL | - |
+| `AUTH_SHEET_URL` | Google Sheets user authentication database URL | - |
+| `PORT` | Application server port | `8000` |

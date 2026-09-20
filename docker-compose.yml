@@ -1,0 +1,21 @@
+services:
+  survey-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: survey-ui:latest
+    container_name: survey-ui
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8000}:8000"
+    env_file:
+      - .env
+    volumes:
+      # Keep survey data synchronized with host
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/login || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
