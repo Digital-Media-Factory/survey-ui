@@ -118,15 +118,3 @@ All GET statistics endpoints support query filtering via the `filters` URL param
 ```
 
 ---
-
-## Configuration Reference (.env)
-
-| Variable | Description | Default |
-|---|---|---|
-| `AUTH_USERNAME` | Super admin fallback username | `admin` |
-| `AUTH_EMAIL` | Super admin fallback email | `admin@example.com` |
-| `AUTH_PASSWORD` | Super admin fallback password | `password123` |
-| `SESSION_SECRET_KEY` | Secret key for signing HMAC session cookies | Recommended to generate a secure random string |
-| `DRIVE_LINK` | Public Google Sheets/Drive survey data URL | - |
-| `AUTH_SHEET_URL` | Google Sheets user authentication database URL | - |
-| `PORT` | Application server port | `8000` |
