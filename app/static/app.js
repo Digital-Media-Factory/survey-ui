@@ -12,11 +12,16 @@ const qs = () => {
 async function api(path, options) {
   const res = await fetch(path, options);
   if (!res.ok) {
+    if (res.status === 401) {
+      window.location.href = "/login";
+      return new Promise(() => {});
+    }
     const body = await res.json().catch(() => ({}));
     throw new Error(body.detail || `تعذّر تنفيذ الطلب (${res.status})`);
   }
   return res.json();
 }
+
 
 function toast(message, isError = false) {
   const el = $("toast");
@@ -63,12 +68,12 @@ async function boot() {
   try {
     const meta = await api("/api/meta");
     state.meta = meta;
-    $("sourceTag").textContent = `${meta.source} · ${meta.responses} رد`;
+    if ($("sourceTag")) $("sourceTag").textContent = `${meta.source} · ${meta.responses} رد`;
     if (meta.dateRange) $("heroRange").textContent = `${meta.dateRange[0]} — ${meta.dateRange[1]}`;
     renderFilters(meta.filters);
     await refresh();
   } catch (err) {
-    $("sourceTag").textContent = "لا توجد بيانات";
+    if ($("sourceTag")) $("sourceTag").textContent = "لا توجد بيانات";
     $("highlightGrid").innerHTML = `<p class="empty">${err.message}<br />ارفع ملفاً من الأعلى للبدء.</p>`;
   }
 }
@@ -375,54 +380,24 @@ $("prevPage").addEventListener("click", () => { state.page--; loadRows(); });
 $("nextPage").addEventListener("click", () => { state.page++; loadRows(); });
 $("tableSearch").addEventListener("input", debounce((e) => { state.search = e.target.value; state.page = 1; loadRows(); }, 300));
 
-/* --------------------------------------------------------------- sources -- */
-
-$("openSource").addEventListener("click", (e) => {
-  const panel = $("sourcePanel");
-  panel.hidden = !panel.hidden;
-  e.currentTarget.setAttribute("aria-expanded", String(!panel.hidden));
-});
-
-async function loadFile(file) {
-  const form = new FormData();
-  form.append("file", file);
+$("syncBtn")?.addEventListener("click", async () => {
+  const btn = $("syncBtn");
+  const icon = btn.querySelector(".sync-icon");
+  const text = btn.querySelector(".sync-text");
   try {
-    await api("/api/source/upload", { method: "POST", body: form });
-    toast(`تم تحميل ${file.name}`);
+    btn.disabled = true;
+    if (icon) icon.classList.add("is-spinning");
+    if (text) text.textContent = "جارٍ التحديث…";
+    const res = await api("/api/source/reload", { method: "POST" });
+    toast(`تم تحديث البيانات بنجاح (${res.responses} رد)`);
     state.filters = {};
-    $("sourcePanel").hidden = true;
     await boot();
   } catch (err) {
-    toast(err.message, true);
-  }
-}
-
-$("fileInput").addEventListener("change", (e) => e.target.files[0] && loadFile(e.target.files[0]));
-
-const drop = $("drop");
-["dragenter", "dragover"].forEach((ev) =>
-  drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("is-over"); })
-);
-["dragleave", "drop"].forEach((ev) =>
-  drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("is-over"); })
-);
-drop.addEventListener("drop", (e) => e.dataTransfer.files[0] && loadFile(e.dataTransfer.files[0]));
-
-$("driveBtn").addEventListener("click", async () => {
-  const link = $("driveInput").value.trim();
-  if (!link) return toast("الصق رابط الملف أولاً", true);
-  try {
-    await api("/api/source/drive", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ link }),
-    });
-    toast("تم التحميل من الرابط");
-    state.filters = {};
-    $("sourcePanel").hidden = true;
-    await boot();
-  } catch (err) {
-    toast(err.message, true);
+    toast(`تعذّر التحديث: ${err.message}`, true);
+  } finally {
+    btn.disabled = false;
+    if (icon) icon.classList.remove("is-spinning");
+    if (text) text.textContent = "تحديث البيانات";
   }
 });
 

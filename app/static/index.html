@@ -25,22 +25,21 @@
       <span>لوحة نتائج الاستبيان</span>
     </div>
     <div class="topbar-actions">
-      <span class="source-tag" id="sourceTag">جارٍ التحميل…</span>
-      <button class="btn-quiet" id="openSource" aria-expanded="false">تغيير مصدر البيانات</button>
-    </div>
-  </div>
+      <button class="btn-quiet btn-sync" id="syncBtn" title="تحديث ومزامنة البيانات من Google Drive">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="sync-icon">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+        </svg>
+        <span class="sync-text">تحديث البيانات</span>
+      </button>
+      <a href="/logout" class="btn-quiet btn-logout" id="logoutBtn" title="تسجيل الخروج">
 
-  <div class="source-panel" id="sourcePanel" hidden>
-    <div class="source-panel-inner">
-      <label class="drop" id="drop">
-        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" hidden />
-        <strong>اسحب ملف Excel هنا أو اضغط للاختيار</strong>
-        <small>xlsx · xls · csv</small>
-      </label>
-      <div class="link-field">
-        <input type="url" id="driveInput" placeholder="الصق رابط Google Sheets أو Drive" />
-        <button id="driveBtn">تحميل</button>
-      </div>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+        <span>تسجيل الخروج</span>
+      </a>
     </div>
   </div>
 </header>

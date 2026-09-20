@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 import io
-import re
 from pathlib import Path
+import re
+import time
 
 import httpx
 import pandas as pd
@@ -52,8 +53,15 @@ def read_path(path: str | Path) -> pd.DataFrame:
 
 async def read_link(link: str) -> pd.DataFrame:
     url = drive_link_to_download_url(link)
+    sep = "&" if "?" in url else "?"
+    url_with_cb = f"{url}{sep}_cb={int(time.time())}"
+    headers = {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
+    }
     async with httpx.AsyncClient(follow_redirects=True, timeout=60) as client:
-        resp = await client.get(url)
+        resp = await client.get(url_with_cb, headers=headers)
         resp.raise_for_status()
     if b"<html" in resp.content[:400].lower():
         raise ValueError(
@@ -61,6 +69,7 @@ async def read_link(link: str) -> pd.DataFrame:
             "'Anyone with the link' and try again."
         )
     return read_bytes(resp.content, url)
+
 
 
 def default_dataframe() -> tuple[pd.DataFrame, str] | tuple[None, None]:

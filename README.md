@@ -99,7 +99,4 @@ returns — pass those strings straight through and they will match.
 - Private Drive files need OAuth — the loader deliberately only handles
   link-shared files and tells you when it got an HTML login page instead.
 
-## Working on it in Antigravity
 
-`AGENTS.md` holds the rules the agent should follow, and a set of ready prompts
-for the next features. See that file.

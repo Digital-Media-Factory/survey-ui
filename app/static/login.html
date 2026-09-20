@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0B1024" />
+  <title>تسجيل الدخول — أمان الأطفال في العالم الرقمي</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Tajawal:wght@400;500;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+
+<body class="login-page">
+
+  <div class="aurora" aria-hidden="true">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+
+  <div class="login-wrapper">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-brand">
+          <svg viewBox="0 0 32 32" class="mark" aria-hidden="true">
+            <path d="M16 3 5 8v8c0 7 4.7 11.9 11 13 6.3-1.1 11-6 11-13V8L16 3Z" />
+            <path class="mark-check" d="M11 16.5 14.6 20 21 13.5" />
+          </svg>
+          <span>لوحة نتائج الاستبيان</span>
+        </div>
+        <h1>أمان الأطفال <span class="grad">في العالم الرقمي</span></h1>
+        <p class="login-subtitle">أدخل بيانات الاعتماد للمتابعة إلى لوحة النتائج والتحليلات</p>
+      </div>
+
+      <div class="login-alert" id="errorAlert" role="alert" hidden style="display: none;">
+        <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span id="errorMessage"></span>
+      </div>
+
+      <form id="loginForm" class="login-form" novalidate>
+        <div class="form-group">
+          <label for="username">اسم المستخدم أو البريد الإلكتروني</label>
+          <div class="input-wrap">
+            <span class="input-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </span>
+            <input type="text" id="username" name="username" placeholder="مثال: admin أو admin@example.com" required
+              autofocus autocomplete="username" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">كلمة المرور</label>
+          <div class="input-wrap">
+            <span class="input-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </span>
+            <input type="password" id="password" name="password" placeholder="••••••••" required
+              autocomplete="current-password" />
+            <button type="button" id="togglePassword" class="pwd-toggle" aria-label="إظهار أو إخفاء كلمة المرور"
+              title="إظهار أو إخفاء كلمة المرور">
+              <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" id="submitBtn" class="btn-login">
+          <span class="btn-text">تسجيل الدخول</span>
+          <span class="spinner" aria-hidden="true" hidden></span>
+        </button>
+      </form>
+
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById("loginForm");
+    const usernameInput = document.getElementById("username");
+    const passwordInput = document.getElementById("password");
+    const submitBtn = document.getElementById("submitBtn");
+    const btnText = submitBtn.querySelector(".btn-text");
+    const spinner = submitBtn.querySelector(".spinner");
+    const errorAlert = document.getElementById("errorAlert");
+    const errorMessage = document.getElementById("errorMessage");
+    const togglePassword = document.getElementById("togglePassword");
+    const eyeIcon = document.getElementById("eyeIcon");
+
+    // Toggle password visibility
+    togglePassword.addEventListener("click", () => {
+      const isPassword = passwordInput.type === "password";
+      passwordInput.type = isPassword ? "text" : "password";
+      eyeIcon.innerHTML = isPassword
+        ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>'
+        : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+    });
+
+    // Clear error alert on input typing
+    function clearError() {
+      errorAlert.hidden = true;
+      errorAlert.style.display = "none";
+      errorMessage.textContent = "";
+      usernameInput.classList.remove("input-error");
+      passwordInput.classList.remove("input-error");
+    }
+    usernameInput.addEventListener("input", clearError);
+    passwordInput.addEventListener("input", clearError);
+
+    // Initial state cleanup & handles back/forward cache (bfcache)
+    clearError();
+    window.addEventListener("pageshow", () => {
+      clearError();
+      setLoading(false);
+    });
+
+    // Form submit
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value;
+
+      if (!username || !password) {
+        showError("يرجى إدخال اسم المستخدم وكلمة المرور.");
+        return;
+      }
+
+      setLoading(true);
+      clearError();
+
+      try {
+        const res = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (res.ok && data.ok) {
+          btnText.textContent = "تم بنجاح! جارٍ الدخول...";
+          submitBtn.classList.add("btn-success");
+          setTimeout(() => {
+            window.location.href = "/";
+          }, 350);
+        } else {
+          showError(data.detail || "اسم المستخدم أو كلمة المرور غير صحيحة");
+          passwordInput.value = "";
+          passwordInput.focus();
+        }
+      } catch (err) {
+        showError("تعذّر الاتصال بالخادم، يرجى المحاولة لاحقاً.");
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    function showError(msg) {
+      errorMessage.textContent = msg;
+      errorAlert.hidden = false;
+      errorAlert.style.display = "flex";
+      usernameInput.classList.add("input-error");
+      passwordInput.classList.add("input-error");
+      errorAlert.classList.remove("shake");
+      void errorAlert.offsetWidth; // trigger reflow
+      errorAlert.classList.add("shake");
+    }
+
+    function setLoading(isLoading) {
+      submitBtn.disabled = isLoading;
+      spinner.hidden = !isLoading;
+      if (!isLoading && !submitBtn.classList.contains("btn-success")) {
+        btnText.textContent = "تسجيل الدخول";
+      }
+    }
+  </script>
+</body>
+
+</html>

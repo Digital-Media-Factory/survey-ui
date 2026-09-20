@@ -13,32 +13,231 @@ import pandas as pd
 
 # ---------------------------------------------------------------- cleaning ---
 
-# Free-text country answers arrive misspelled, in two scripts, and sometimes as
-# a city. Normalising them is the difference between 7 bars and 4 real ones.
-COUNTRY_ALIASES = {
-    "yemen": "اليمن",
-    "اليمن": "اليمن",
-    "yemen ": "اليمن",
+# Free-text country answers arrive misspelled, in multiple languages (English, French, Arabic),
+# and sometimes include cities or phrases. Normalising them unifies duplicates into standard Arabic names.
+COUNTRY_ALIASES: dict[str, str] = {
+    # المغرب
+    "morocco": "المغرب",
+    "maroc": "المغرب",
+    "le maroc": "المغرب",
+    "morocco,casablanca": "المغرب",
+    "casablanca": "المغرب",
+    "rabat": "المغرب",
+    "marrakech": "المغرب",
+    "tangier": "المغرب",
+    "المغرب": "المغرب",
+    "المغرب ": "المغرب",
+    # موريتانيا
+    "mauritania": "موريتانيا",
+    "nouakchott": "موريتانيا",
+    "موريتانيا": "موريتانيا",
+    "موريتانيا ": "موريتانيا",
+    # الأردن
+    "jordan": "الأردن",
+    "amman": "الأردن",
+    "الاردن": "الأردن",
+    "الأردن": "الأردن",
+    "المملكة الاردنية الهاشمية": "الأردن",
+    "المملكة الأردنية الهاشمية": "الأردن",
+    # مصر
     "egypt": "مصر",
+    "cairo": "مصر",
+    "alexandria": "مصر",
+    "giza": "مصر",
     "مصر": "مصر",
     "القاهره": "مصر",
     "القاهرة": "مصر",
-    "lebanon": "لبنان",
-    "لبنان": "لبنان",
-    "بيروت": "لبنان",
-    "syria": "سوريا",
-    "سوريا": "سوريا",
-    "jordan": "الأردن",
-    "الاردن": "الأردن",
-    "الأردن": "الأردن",
-    "palestine": "فلسطين",
-    "فلسطين": "فلسطين",
+    # اليمن
+    "yemen": "اليمن",
+    "yemen ": "اليمن",
+    "sanaa": "اليمن",
+    "aden": "اليمن",
+    "اليمن": "اليمن",
+    "اليمن ": "اليمن",
+    # العراق
     "iraq": "العراق",
+    "baghdad": "العراق",
+    "erbil": "العراق",
+    "basra": "العراق",
+    "mosul": "العراق",
     "العراق": "العراق",
+    "في العراق": "العراق",
+    # لبنان
+    "lebanon": "لبنان",
+    "beirut": "لبنان",
+    "لبنان": "لبنان",
+    "لبنان ": "لبنان",
+    "بيروت": "لبنان",
+    # سوريا
+    "syria": "سوريا",
+    "damascus": "سوريا",
+    "aleppo": "سوريا",
+    "سوريا": "سوريا",
+    "سورية": "سوريا",
+    # فلسطين
+    "palestine": "فلسطين",
+    "jerusalem": "فلسطين",
+    "gaza": "فلسطين",
+    "ramallah": "فلسطين",
+    "فلسطين": "فلسطين",
+    # ليبيا
+    "libya": "ليبيا",
+    "tripoli": "ليبيا",
+    "benghazi": "ليبيا",
+    "ليبيا": "ليبيا",
+    # السودان
+    "sudan": "السودان",
+    "khartoum": "السودان",
     "السودان": "السودان",
-    "المغرب": "المغرب",
+    # السعودية
+    "saudi": "السعودية",
+    "saudi arabia": "السعودية",
+    "ksa": "السعودية",
+    "riyadh": "السعودية",
+    "jeddah": "السعودية",
+    "mecca": "السعودية",
+    "medina": "السعودية",
+    "dammam": "السعودية",
     "السعودية": "السعودية",
+    "المملكة العربية السعودية": "السعودية",
+    # الإمارات
+    "united arab emirates": "الإمارات",
+    "uae": "الإمارات",
+    "dubai": "الإمارات",
+    "abu dhabi": "الإمارات",
+    "sharjah": "الإمارات",
+    "الإمارات": "الإمارات",
+    "الامارات": "الإمارات",
+    # الجزائر
+    "algeria": "الجزائر",
+    "algiers": "الجزائر",
+    "oran": "الجزائر",
+    "الجزائر": "الجزائر",
+    # تونس
+    "tunisia": "تونس",
+    "tunis": "تونس",
+    "sfax": "تونس",
+    "تونس": "تونس",
+    # الكويت
+    "kuwait": "الكويت",
+    "kuwait city": "الكويت",
+    "الكويت": "الكويت",
+    # قطر
+    "qatar": "قطر",
+    "doha": "قطر",
+    "قطر": "قطر",
+    # البحرين
+    "bahrain": "البحرين",
+    "manama": "البحرين",
+    "البحرين": "البحرين",
+    # عمان
+    "oman": "سلطنة عمان",
+    "muscat": "سلطنة عمان",
+    "salalah": "سلطنة عمان",
+    "سلطنة عمان": "سلطنة عمان",
+    # الصومال
+    "somalia": "الصومال",
+    "mogadishu": "الصومال",
+    "الصومال": "الصومال",
+    # جيبوتي
+    "djibouti": "جيبوتي",
+    "جيبوتي": "جيبوتي",
+    # جزر القمر
+    "comoros": "جزر القمر",
+    "جزر القمر": "جزر القمر",
+    # دول عالمية
+    "turkey": "تركيا", "turkiye": "تركيا", "istanbul": "تركيا", "ankara": "تركيا",
+    "united states": "الولايات المتحدة", "usa": "الولايات المتحدة", "united states of america": "الولايات المتحدة", "us": "الولايات المتحدة",
+    "united kingdom": "المملكة المتحدة", "uk": "المملكة المتحدة", "britain": "المملكة المتحدة", "england": "المملكة المتحدة", "great britain": "المملكة المتحدة", "london": "المملكة المتحدة",
+    "germany": "ألمانيا", "deutschland": "ألمانيا", "berlin": "ألمانيا",
+    "france": "فرنسا", "paris": "فرنسا",
+    "italy": "إيطاليا", "italia": "إيطاليا", "rome": "إيطاليا",
+    "spain": "إسبانيا", "espana": "إسبانيا", "madrid": "إسبانيا", "barcelona": "إسبانيا",
+    "canada": "كندا", "toronto": "كندا", "montreal": "كندا",
+    "australia": "أستراليا", "sydney": "أستراليا",
+    "russia": "روسيا", "moscow": "روسيا",
+    "china": "الصين", "beijing": "الصين",
+    "japan": "اليابان", "tokyo": "اليابان",
+    "south korea": "كوريا الجنوبية", "korea": "كوريا الجنوبية", "seoul": "كوريا الجنوبية",
+    "india": "الهند", "new delhi": "الهند",
+    "pakistan": "باكستان", "islamabad": "باكستان",
+    "indonesia": "إندونيسيا", "jakarta": "إندونيسيا",
+    "malaysia": "ماليزيا", "kuala lumpur": "ماليزيا",
+    "netherlands": "هولندا", "holland": "هولندا", "amsterdam": "هولندا",
+    "belgium": "بلجيكا", "brussels": "بلجيكا",
+    "switzerland": "سويسرا", "suisse": "سويسرا",
+    "sweden": "السويد", "stockholm": "السويد",
+    "norway": "النرويج", "oslo": "النرويج",
+    "denmark": "الدنمارك", "copenhagen": "الدنمارك",
+    "finland": "فنلندا", "helsinki": "فنلندا",
+    "austria": "النمسا", "vienna": "النمسا",
+    "greece": "اليونان", "athens": "اليونان",
+    "portugal": "البرتغال", "lisbon": "البرتغال",
+    "ireland": "أيرلندا", "dublin": "أيرلندا",
+    "poland": "بولندا", "warsaw": "بولندا",
+    "ukraine": "أوكرانيا", "kyiv": "أوكرانيا",
+    "brazil": "البرازيل", "brasil": "البرازيل",
+    "argentina": "الأرجنتين",
 }
+
+COUNTRY_PATTERNS: list[tuple[re.Pattern, str]] = [
+    (re.compile(r"moroc|maroc|مغرب|casablanca|rabat|الدار البيضاء|كازا|طنجة|tanger|tangier|مراكش|فاس|agadir", re.I), "المغرب"),
+
+    (re.compile(r"mauritani|موريتان|نواكشوط|nouakchott", re.I), "موريتانيا"),
+    (re.compile(r"jordan|أردن|اردن|amman|عمان|عمّان", re.I), "الأردن"),
+    (re.compile(r"yemen|يمن|صنعاء|عدن|sanaa|aden", re.I), "اليمن"),
+    (re.compile(r"egypt|مصر|قاهر|cairo|alexandria|اسكندر|جيزة|giza|منصورة|طنطا", re.I), "مصر"),
+    (re.compile(r"palestin|فلسطين|غزة|gaza|قدس|jerusalem|رام الله|ramallah|نابلس|خليل|جنين", re.I), "فلسطين"),
+    (re.compile(r"syria|سوريا|سورية|دمشق|damascus|حلب|aleppo|حمص|شام", re.I), "سوريا"),
+    (re.compile(r"leban|لبنان|بيروت|beirut|صيدا|sidon", re.I), "لبنان"),
+    (re.compile(r"iraq|عراق|بغداد|baghdad|بصرة|basra|اربيل|erbil|أربيل|موصل|mosul", re.I), "العراق"),
+    (re.compile(r"liby|ليبيا|طرابلس|tripoli|بنغازي|benghazi|مصراتة", re.I), "ليبيا"),
+    (re.compile(r"sudan|سودان|خرطوم|khartoum|أم درمان", re.I), "السودان"),
+    (re.compile(r"saudi|ksa|سعودي|رياض|riyadh|جدة|jeddah|مكة|mecca|مدينة منورة|medina|دمام|dammam", re.I), "السعودية"),
+    (re.compile(r"alger|جزائر|وهران|oran|قسنطينة|constantine", re.I), "الجزائر"),
+    (re.compile(r"tunis|تونس|صفاقس|sfax|سوسة|sousse", re.I), "تونس"),
+    (re.compile(r"emirates|uae|إمارات|امارات|دبي|dubai|أبوظبي|ابوظبي|abu dhabi|شارقة|sharjah|عجمان", re.I), "الإمارات"),
+    (re.compile(r"kuwait|كويت", re.I), "الكويت"),
+    (re.compile(r"qatar|قطر|دوحة|doha", re.I), "قطر"),
+    (re.compile(r"bahrain|بحرين|منامة|manama", re.I), "البحرين"),
+    (re.compile(r"oman|سلطنة عمان|مسقط|muscat|صلالة|salalah", re.I), "سلطنة عمان"),
+    (re.compile(r"somali|صومال|مقديشو|mogadishu", re.I), "الصومال"),
+    (re.compile(r"djibouti|جيبوتي", re.I), "جيبوتي"),
+    (re.compile(r"comoros|جزر القمر", re.I), "جزر القمر"),
+    (re.compile(r"turkey|türkiye|تركيا|إسطنبول|istanbul|اسطنبول|أنقرة|ankara", re.I), "تركيا"),
+    (re.compile(r"germany|deutschland|ألمانيا|المانيا|برلين|berlin", re.I), "ألمانيا"),
+    (re.compile(r"france|فرنسا|باريس|paris", re.I), "فرنسا"),
+    (re.compile(r"uk|britain|england|great britain|بريطانيا|إنجلترا|انجلترا|لندن|london", re.I), "بريطانيا"),
+    (re.compile(r"united states|usa|أمريكا|امريكا|واشنطن|washington", re.I), "الولايات المتحدة"),
+    (re.compile(r"canada|كندا|toronto|montreal", re.I), "كندا"),
+    (re.compile(r"australia|أستراليا|استراليا|sydney", re.I), "أستراليا"),
+    (re.compile(r"russia|روسيا|moscow", re.I), "روسيا"),
+    (re.compile(r"china|الصين|beijing", re.I), "الصين"),
+    (re.compile(r"japan|اليابان|tokyo", re.I), "اليابان"),
+    (re.compile(r"korea|كوريا|seoul", re.I), "كوريا الجنوبية"),
+    (re.compile(r"india|الهند|delhi", re.I), "الهند"),
+    (re.compile(r"pakistan|باكستان|islamabad", re.I), "باكستان"),
+    (re.compile(r"indonesia|إندونيسيا|اندونيسيا|jakarta", re.I), "إندونيسيا"),
+    (re.compile(r"malaysia|ماليزيا|kuala lumpur", re.I), "ماليزيا"),
+    (re.compile(r"netherlands|holland|هولندا|amsterdam", re.I), "هولندا"),
+    (re.compile(r"belgium|بلجيكا|brussels", re.I), "بلجيكا"),
+    (re.compile(r"switzerland|suisse|schweiz|سويسرا", re.I), "سويسرا"),
+    (re.compile(r"sweden|سويد|السويد|stockholm", re.I), "السويد"),
+    (re.compile(r"norway|النرويج|oslo", re.I), "النرويج"),
+    (re.compile(r"denmark|الدنمارك|copenhagen", re.I), "الدنمارك"),
+    (re.compile(r"finland|فنلندا|helsinki", re.I), "فنلندا"),
+    (re.compile(r"austria|النمسا|vienna", re.I), "النمسا"),
+    (re.compile(r"greece|اليونان|athens", re.I), "اليونان"),
+    (re.compile(r"portugal|البرتغال|lisbon", re.I), "البرتغال"),
+    (re.compile(r"ireland|أيرلندا|ايرلندا|dublin", re.I), "أيرلندا"),
+    (re.compile(r"poland|بولندا|warsaw", re.I), "بولندا"),
+    (re.compile(r"ukraine|أوكرانيا|اوكرانيا|kyiv", re.I), "أوكرانيا"),
+    (re.compile(r"brazil|brasil|البرازيل", re.I), "البرازيل"),
+    (re.compile(r"argentina|الأرجنتين|الارجنتين", re.I), "الأرجنتين"),
+    (re.compile(r"south africa|جنوب أفريقيا|جنوب افريقيا", re.I), "جنوب أفريقيا"),
+]
+
+
 
 ARABIC_DIACRITICS = re.compile(r"[\u0617-\u061A\u064B-\u0652\u0640]")
 
@@ -69,9 +268,23 @@ def normalize_text(value: Any) -> str:
     return s.replace("أ", "ا").replace("إ", "ا").replace("آ", "ا").replace("ى", "ي")
 
 
-def canonical_country(value: str) -> str:
-    key = normalize_text(value).lower()
-    return COUNTRY_ALIASES.get(key, normalize_text(value) or "غير محدد")
+def canonical_country(value: Any) -> str:
+    cleaned = tidy(value)
+    if not cleaned:
+        return "غير محدد"
+
+    # 1. Exact / alias lookup
+    key = normalize_text(cleaned).lower()
+    if key in COUNTRY_ALIASES:
+        return COUNTRY_ALIASES[key]
+
+    # 2. Pattern matching for multilingual variations (Morocco, Casablanca, Le Maroc, etc.)
+    for pattern, canonical_name in COUNTRY_PATTERNS:
+        if pattern.search(cleaned):
+            return canonical_name
+
+    return cleaned
+
 
 
 # ------------------------------------------------------------ question type ---
@@ -134,8 +347,9 @@ class SurveyData:
         self.timestamp_col = next(
             (q["title"] for q in self.questions if q["type"] == "timestamp"), None
         )
-        self.filter_cols = self._pick_filters()
         self._clean()
+        self.filter_cols = self._pick_filters()
+
 
     # -- setup ---------------------------------------------------------------
 
